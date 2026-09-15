@@ -315,9 +315,22 @@ services:
     depends_on:
       <<: *airflow-common-depends-on
 
+  
+  fastapi:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    restart: always
+  
+
   # You can enable flower by adding "--profile flower" option e.g. docker-compose --profile flower up
   # or by explicitly targeted on the command line e.g. docker-compose up flower.
   # See: https://docs.docker.com/compose/profiles/
+  
   flower:
     <<: *airflow-common
     command: celery flower

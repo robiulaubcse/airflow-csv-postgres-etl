@@ -109,6 +109,33 @@ services:
       start_period: 5s
     restart: always
 
+
+  warehouse-postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: airflow_etl_warehouse
+      POSTGRES_USER: warehouse
+      POSTGRES_PASSWORD: warehouse
+
+    volumes:
+      - warehouse-postgres-db:/var/lib/postgresql/data
+
+    ports:
+    - "5433:5432"
+    
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "warehouse"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+
+    networks:
+      - database_network
+
+    restart: always
+
+
+
   redis:
     # Redis is limited to 7.2-bookworm due to licencing change
     # https://redis.io/blog/redis-adopts-dual-source-available-licensing/
@@ -186,6 +213,9 @@ services:
       # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
       DUMB_INIT_SETSID: "0"
     restart: always
+    networks:
+      - default
+      - database_network
     depends_on:
       <<: *airflow-common-depends-on
       airflow-apiserver:
@@ -325,6 +355,10 @@ services:
     ports:
       - "8000:8000"
     restart: always
+
+    networks:
+      - fastapi_network
+      - default
   
 
   # You can enable flower by adding "--profile flower" option e.g. docker-compose --profile flower up
@@ -352,3 +386,19 @@ services:
 
 volumes:
   postgres-db-volume:
+  warehouse-postgres-db:
+
+networks:
+  fastapi_network:
+    name: fastapi_network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/24
+
+  database_network:
+    name: database_network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/24
